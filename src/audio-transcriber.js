@@ -191,6 +191,7 @@ class AudioTranscriber {
       formData.append('model', this.transcriptionModel);
       formData.append('language', 'pt');
 
+      console.log(`📤 Sending chunk ${chunkIndex} to Whisper API...`);
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
@@ -199,16 +200,26 @@ class AudioTranscriber {
         body: formData
       });
 
+      console.log(`📥 Response status: ${response.status}`);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        console.warn(`Whisper API error on chunk ${chunkIndex} (${response.status}): ${errorData.error?.message || 'Unknown'}`);
+        const errorText = await response.text();
+        console.error(`❌ Whisper API error on chunk ${chunkIndex} (${response.status}):`, errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+          console.error(`Error details:`, errorData.error?.message || errorText);
+        } catch (e) {
+          console.error(`Raw error response:`, errorText);
+        }
         return ''; // Return empty string instead of throwing, so we keep other chunks
       }
 
       const data = await response.json();
+      console.log(`✅ Chunk ${chunkIndex} transcribed:`, data.text?.substring(0, 50) + '...');
       return data.text || '';
     } catch (error) {
-      console.warn(`Chunk ${chunkIndex} transcription error (non-fatal):`, error);
+      console.error(`❌ Chunk ${chunkIndex} transcription error:`, error.message, error);
       return ''; // Return empty string on error, don't throw
     }
   }
@@ -262,12 +273,18 @@ class AudioTranscriber {
       // Combine all transcriptions
       this.transcription = transcriptions.join(' ').trim();
 
+      console.log(`📊 Transcription Summary:`);
+      console.log(`  - Successful chunks: ${successfulChunks}`);
+      console.log(`  - Failed chunks: ${failedChunks}`);
+      console.log(`  - Total transcription length: ${this.transcription.length} characters`);
+
       // Warn if we lost some chunks but keep the result
       if (failedChunks > 0) {
         console.warn(`⚠️ ${failedChunks} chunks failed/skipped, but got ${successfulChunks} successful chunks`);
       }
 
       if (!this.transcription || this.transcription.length === 0) {
+        console.error(`❌ All chunks failed! Successfully transcribed: ${successfulChunks}, Failed: ${failedChunks}`);
         throw new Error('No transcription could be extracted from the audio file. Please try again.');
       }
 
