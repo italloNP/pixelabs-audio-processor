@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Pixelabs Áudio Processor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎙️ Pixelabs Áudio Processor</h1>
+
+    <!-- Configuration Section -->
+    <section class="config-section">
+      <h2>⚙️ Configuração da API</h2>
+      <div class="form-group">
+        <label for="openRouterKey">OpenAI API Key:</label>
+        <input type="password" id="openRouterKey" placeholder="sk-..." class="api-input">
+        <small>Obtenha sua chave em https://platform.openai.com/api-keys</small>
+      </div>
+    </section>
+
+    <!-- Audio Upload Section -->
+    <section class="audio-section">
+      <h2>🎵 Enviar Áudio</h2>
+      <div class="form-group">
+        <input type="file" id="audioFile" accept="audio/*" class="file-input">
+        <div id="fileStatus" class="file-status"></div>
+      </div>
+    </section>
+
+    <!-- Transcription Section -->
+    <section class="transcription-section">
+      <h2>📝 Transcrição</h2>
+      <button id="transcribeBtn" class="btn-primary" disabled>Transcrever Áudio</button>
+      <div id="transcriptionOutput" class="output-box"></div>
+    </section>
+
+    <!-- Prompt Transformation Section -->
+    <section class="prompt-section">
+      <h2>🤖 Transformação com IA (GPT-5 Mini)</h2>
+      <div class="form-group">
+        <label for="promptDropdown">Selecione um Prompt Predefinido:</label>
+        <select id="promptDropdown" class="prompt-dropdown">
+          <option value="summarize">📋 Resumir Transcrição</option>
+          <option value="extract_key_points">⭐ Extrair Pontos-Chave</option>
+          <option value="generate_meeting_notes">📌 Gerar Notas de Reunião</option>
+          <option value="create_todo">✅ Criar Lista de Tarefas</option>
+          <option value="extract_decisions">🎯 Extrair Decisões Tomadas</option>
+          <option value="create_questions">❓ Formular Perguntas Importantes</option>
+          <option value="professional_summary">👔 Resumo Executivo Profissional</option>
+          <option value="custom">✏️ Prompt Personalizado</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="customPrompt">Prompt Personalizado:</label>
+        <textarea id="customPrompt" class="prompt-textarea" placeholder="Descreva como você quer transformar a transcrição..."></textarea>
+      </div>
+
+      <button id="transformBtn" class="btn-primary" disabled>Transformar Transcrição</button>
+    </section>
+
+    <!-- Results Section -->
+    <section class="results-section">
+      <h2>✨ Resultado Final</h2>
+      <div id="finalResult" class="output-box"></div>
+      <button id="copyBtn" class="btn-secondary" style="display: none;">Copiar Resultado</button>
+      <button id="downloadBtn" class="btn-secondary" style="display: none;">Baixar como Texto</button>
+    </section>
+  </div>
+
+  <script src="audio-transcriber.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
