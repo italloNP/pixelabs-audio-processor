@@ -26,15 +26,15 @@ class AudioTranscriber {
     };
   }
 
-  // Validate OpenRouter API key (starts with sk-or-)
+  // Validate OpenAI API key
   validateApiKey(key) {
-    return key && key.trim().startsWith('sk-or-');
+    return key && key.trim().startsWith('sk-');
   }
 
-  // Set OpenRouter API key
+  // Set OpenAI API key
   setApiKey(key) {
     if (!this.validateApiKey(key)) {
-      throw new Error('Invalid OpenRouter API key format. Should start with sk-or-');
+      throw new Error('Invalid OpenAI API key format. Should start with sk-');
     }
     this.openaiKey = key.trim();
   }
@@ -191,7 +191,7 @@ class AudioTranscriber {
       formData.append('model', this.transcriptionModel);
       formData.append('language', 'pt');
 
-      const response = await fetch('https://openrouter.ai/api/v1/audio/transcriptions', {
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.openaiKey}`
@@ -296,14 +296,14 @@ class AudioTranscriber {
     try {
       const fullPrompt = `${customPrompt.trim()}\n\n---\n\nTranscription:\n${this.transcription}`;
 
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.openaiKey}`
         },
         body: JSON.stringify({
-          model: this.transformationModel, // GPT-4o Mini via OpenRouter
+          model: this.transformationModel, // GPT-4o Mini
           messages: [
             {
               role: 'user',
