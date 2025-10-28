@@ -51,61 +51,32 @@ class AudioTranscriber {
     });
   }
 
-  // Split audio into chunks and transcode to MP3-like compression
-  async splitAndCompressAudio(audioFile) {
+  // Simple chunking - just split large files without resampling
+  async splitAudio(audioFile) {
     try {
-      const arrayBuffer = await audioFile.arrayBuffer();
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-      // Split into 25-second chunks (Whisper max recommended)
-      const sampleRate = audioBuffer.sampleRate;
-      const chunkDuration = 25; // seconds
-      const chunkSamples = chunkDuration * sampleRate;
-      const numberOfChunks = Math.ceil(audioBuffer.length / chunkSamples);
-
-      const chunks = [];
-
-      for (let i = 0; i < numberOfChunks; i++) {
-        const startSample = i * chunkSamples;
-        const endSample = Math.min(startSample + chunkSamples, audioBuffer.length);
-
-        // Create offline context for this chunk with 2x speed (32kHz instead of 16kHz)
-        const acceleratedSampleRate = 32000; // 2x speed from 16kHz
-        const acceleratedLength = Math.floor((endSample - startSample) / 2);
-
-        const offlineContext = new OfflineAudioContext(
-          1, // mono
-          acceleratedLength,
-          acceleratedSampleRate
-        );
-
-        // Create buffer for chunk
-        const chunkBuffer = audioContext.createBuffer(
-          1,
-          endSample - startSample,
-          sampleRate
-        );
-
-        const sourceData = audioBuffer.getChannelData(0);
-        const chunkData = chunkBuffer.getChannelData(0);
-        chunkData.set(sourceData.slice(startSample, endSample));
-
-        // Resample chunk with acceleration
-        const source = offlineContext.createBufferSource();
-        source.buffer = chunkBuffer;
-        source.connect(offlineContext.destination);
-        source.start();
-
-        const resampledBuffer = await offlineContext.startRendering();
-        const wavBlob = this.bufferToWav(resampledBuffer);
-        chunks.push(new File([wavBlob], `audio_${i}.wav`, { type: 'audio/wav' }));
+      // If file is small enough (< 25MB), send as-is
+      if (audioFile.size < 25 * 1024 * 1024) {
+        console.log(`✅ File is small (${(audioFile.size / 1024 / 1024).toFixed(2)}MB), sending as single chunk`);
+        return [audioFile];
       }
 
-      console.log(`Split audio into ${numberOfChunks} chunks (2x speed)`);
+      // For larger files, split into 20MB chunks
+      const chunkSize = 20 * 1024 * 1024;
+      const chunks = [];
+      let offset = 0;
+
+      while (offset < audioFile.size) {
+        const chunk = audioFile.slice(offset, offset + chunkSize);
+        const fileName = `audio_chunk_${chunks.length}.${audioFile.name.split('.').pop()}`;
+        const chunkFile = new File([chunk], fileName, { type: audioFile.type });
+        chunks.push(chunkFile);
+        offset += chunkSize;
+      }
+
+      console.log(`✅ Split audio into ${chunks.length} chunks (${(chunkSize / 1024 / 1024).toFixed(0)}MB each)`);
       return chunks;
     } catch (error) {
-      console.warn('Audio split failed, using original file:', error);
+      console.warn('⚠️ Audio split failed, using original file:', error);
       return [audioFile];
     }
   }
@@ -247,11 +218,11 @@ class AudioTranscriber {
     try {
       this.audioFile = audioFile;
 
-      console.log(`Original file size: ${(audioFile.size / 1024 / 1024).toFixed(2)}MB`);
+      console.log(`📁 Original file: ${audioFile.name} (${(audioFile.size / 1024 / 1024).toFixed(2)}MB)`);
 
-      // Split and compress audio into chunks
-      const chunks = await this.splitAndCompressAudio(audioFile);
-      console.log(`Total chunks to process: ${chunks.length}`);
+      // Split audio into chunks if needed
+      const chunks = await this.splitAudio(audioFile);
+      console.log(`📦 Total chunks to process: ${chunks.length}`);
 
       // Transcribe each chunk
       const transcriptions = [];
